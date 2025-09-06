@@ -4,8 +4,6 @@ set -exuo pipefail
 
 GPG_KEY_ID="77193F152BDBE6A6"
 MOUNTPOINT="/mnt"
-ARCHITECTURE="${1:-\$arch}"
-[ $# -gt 0 ] && shift
 
 apk update
 apk add --no-cache arch-install-scripts
@@ -20,12 +18,12 @@ for repo in core extra alarm aur; do
 done
 
 mkdir /etc/pacman.d/
-echo "Server = http://mirror.archlinuxarm.org/${ARCHITECTURE}/\$repo" | tee -a /etc/pacman.d/mirrorlist
+echo 'Server = http://mirror.archlinuxarm.org/$arch/$repo' | tee -a /etc/pacman.d/mirrorlist
 
 pacman-key --init
 pacman-key -r "${GPG_KEY_ID}"
 pacman-key --lsign-key "${GPG_KEY_ID}"
 
 mkdir -p "${MOUNTPOINT}"
-pacstrap "${MOUNTPOINT}" base arch-install-scripts
+pacstrap "${MOUNTPOINT}" base arch-install-scripts $@
 rm -r "${MOUNTPOINT}/var/cache/pacman/pkg"
