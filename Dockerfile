@@ -1,4 +1,4 @@
 FROM scratch
-ARG ROOTFS
-COPY ${ROOTFS}/ /
+ARG TARGETPLATFORM
+COPY ${TARCETPLATFORM}/ /
 CMD ["/usr/bin/bash"]

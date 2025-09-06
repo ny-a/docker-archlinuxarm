@@ -1,6 +1,9 @@
 name: Build ArchLinuxARM Image
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -33,27 +36,23 @@ jobs:
 
       - name: Prepare rootfs (aarch64)
         env:
-          DOCKER_BUILDKIT: "1"
           PLATFORM: linux/arm64/v8
-          TARGET_ARCH: aarch64
         run: |
           set -euxo pipefail
-          mkdir -p "${TARGET_ARCH}"
+          mkdir -p "${PLATFORM}"
           docker run --rm --platform "${PLATFORM}" \
-            -v "$(pwd)/${TARGET_ARCH}:/work" \
+            -v "$(pwd)/${PLATFORM}:/work" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
             --privileged alpine /setup-arch.sh /work aarch64
 
       - name: Prepare rootfs (armv7h)
         env:
-          DOCKER_BUILDKIT: "1"
           PLATFORM: linux/arm/v7
-          TARGET_ARCH: armv7h
         run: |
           set -euxo pipefail
-          mkdir -p "${TARGET_ARCH}"
+          mkdir -p "${PLATFORM}"
           docker run --rm --platform "${PLATFORM}" \
-            -v "$(pwd)/${TARGET_ARCH}:/work" \
+            -v "$(pwd)/${PLATFORM}:/work" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
             --privileged alpine /setup-arch.sh /work armv7h
 
@@ -62,35 +61,9 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository_owner }}/docker-archlinuxarm
         run: |
           set -euxo pipefail
-          # Ensure a root-owned buildx builder uses the same Docker config
-          sudo --preserve-env=DOCKER_CONFIG docker buildx create --name rootbuilder --use || \
-            sudo --preserve-env=DOCKER_CONFIG docker buildx use rootbuilder
-
+          sudo --preserve-env=DOCKER_CONFIG docker buildx create --name rootbuilder --use
           DATE_TAG="$(date -u +%Y%m%d)"
-          cat > docker-bake.hcl <<'HCL'
-          target "aarch64" {
-            context   = "."
-            platforms = ["linux/arm64/v8"]
-            args      = { ROOTFS = "aarch64" }
-          }
-
-          target "armv7h" {
-            context   = "."
-            platforms = ["linux/arm/v7"]
-            args      = { ROOTFS = "armv7h" }
-          }
-
-          group "image" {
-            targets = ["aarch64", "armv7h"]
-          }
-          HCL
-          # Print the bake plan for visibility
-          sudo --preserve-env=DOCKER_CONFIG docker buildx bake image --print
-
-          # Build both targets and publish a multi-arch manifest under the same tags
-          sudo --preserve-env=DOCKER_CONFIG docker buildx bake image --push \
-            --set "*.tags=$IMAGE:latest" \
-            --set "*.tags=$IMAGE:${DATE_TAG}"
+          sudo --preserve-env=DOCKER_CONFIG docker buildx build --platform linux/arm64/v8,linux/arm/v7 . -t $IMAGE:${DATE_TAG} -t $IMAGE:latest --push
 
           # Inspect the pushed image to verify both platforms are present
           sudo --preserve-env=DOCKER_CONFIG docker buildx imagetools inspect "$IMAGE:${DATE_TAG}"
