@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      setup_args:
+        description: "Arguments to pass to setup-arch.sh (e.g. extra packages)"
+        required: false
+        default: ""
+      name:
+        description: "Optional image tag name (adds an extra tag)"
+        required: false
+        default: ""
   schedule:
     - cron: '0 15 * * 5'
 
@@ -42,7 +51,7 @@ jobs:
           docker run --rm --platform "${PLATFORM}" \
             -v "$(pwd)/${PLATFORM}:/mnt" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
-            --privileged alpine /setup-arch.sh
+            --privileged alpine /setup-arch.sh ${{ github.event.inputs.setup_args }}
 
       - name: Prepare rootfs (aarch64)
         env:
@@ -53,7 +62,7 @@ jobs:
           docker run --rm --platform "${PLATFORM}" \
             -v "$(pwd)/${PLATFORM}:/mnt" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
-            --privileged alpine /setup-arch.sh
+            --privileged alpine /setup-arch.sh ${{ github.event.inputs.setup_args }}
 
       - name: Build and push multi-arch image
         env:
@@ -61,8 +70,15 @@ jobs:
         run: |
           set -euxo pipefail
           sudo --preserve-env=DOCKER_CONFIG docker buildx create --name rootbuilder --use
-          DATE_TAG="$(date -u +%F)"
-          sudo --preserve-env=DOCKER_CONFIG docker buildx build --platform linux/arm64,linux/arm/v7 . -t $IMAGE:${DATE_TAG} -t $IMAGE:latest --push
+          DATE="$(date -u +%F)"
+          NAME_TAG="${{ github.event.inputs.name }}"
+          if [ -n "${NAME_TAG}" ]; then
+            EXTRA_TAG="$IMAGE:${NAME_TAG}"
+            DATE_TAG="$IMAGE:${DATE}-${NAME_TAG}"
+          else
+            EXTRA_TAG="$IMAGE:latest"
+            DATE_TAG="$IMAGE:${DATE}"
+          fi
+          sudo --preserve-env=DOCKER_CONFIG docker buildx build --platform linux/arm64,linux/arm/v7 . -t ${DATE_TAG} -t ${EXTRA_TAG} --push
 
-          # Inspect the pushed image to verify both platforms are present
           sudo --preserve-env=DOCKER_CONFIG docker buildx imagetools inspect "$IMAGE:${DATE_TAG}"
