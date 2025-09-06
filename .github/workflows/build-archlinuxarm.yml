@@ -77,6 +77,6 @@ jobs:
             inherits = ["aarch64", "armv7h"]
           }
           HCL
-          docker buildx bake image --push \
+          sudo docker buildx bake image --push \
             --set image.tags="$IMAGE:latest" \
             --set image.tags+="$IMAGE:${DATE_TAG}"
