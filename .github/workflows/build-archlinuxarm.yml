@@ -43,9 +43,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare rootfs (armv7h)
+      - name: Prepare rootfs (aarch64)
         env:
-          PLATFORM: linux/arm/v7
+          PLATFORM: linux/arm64
         run: |
           set -euxo pipefail
           mkdir -p "${PLATFORM}"
@@ -54,9 +54,9 @@ jobs:
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
             --privileged alpine /setup-arch.sh ${{ github.event.inputs.setup_args }}
 
-      - name: Prepare rootfs (aarch64)
+      - name: Prepare rootfs (armv7h)
         env:
-          PLATFORM: linux/arm64
+          PLATFORM: linux/arm/v7
         run: |
           set -euxo pipefail
           mkdir -p "${PLATFORM}"
