@@ -53,6 +53,7 @@ jobs:
             -v "$(pwd)/${PLATFORM}:/mnt" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
             --privileged alpine /setup-arch.sh ${{ github.event.inputs.setup_args }}
+          docker image rm alpine
 
       - name: Prepare rootfs (armv7h)
         env:
@@ -64,6 +65,7 @@ jobs:
             -v "$(pwd)/${PLATFORM}:/mnt" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
             --privileged alpine /setup-arch.sh ${{ github.event.inputs.setup_args }}
+          docker image rm alpine
 
       - name: Build and push multi-arch image
         env:
