@@ -21,6 +21,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set shared Docker config
+        run: echo "DOCKER_CONFIG=$RUNNER_TEMP/.docker" >> "$GITHUB_ENV"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -61,6 +64,10 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository_owner }}/docker-archlinuxarm
         run: |
           set -euxo pipefail
+          # Ensure a root-owned buildx builder uses the same Docker config
+          sudo --preserve-env=DOCKER_CONFIG docker buildx create --name rootbuilder --use || \
+            sudo --preserve-env=DOCKER_CONFIG docker buildx use rootbuilder
+
           DATE_TAG="$(date -u +%Y%m%d)"
           cat > docker-bake.hcl <<'HCL'
           target "aarch64" {
@@ -77,6 +84,6 @@ jobs:
             inherits = ["aarch64", "armv7h"]
           }
           HCL
-          sudo docker buildx bake image --push \
+          sudo --preserve-env=DOCKER_CONFIG docker buildx bake image --push \
             --set image.tags="$IMAGE:latest" \
             --set image.tags+="$IMAGE:${DATE_TAG}"
