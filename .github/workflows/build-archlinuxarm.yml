@@ -40,9 +40,9 @@ jobs:
           set -euxo pipefail
           mkdir -p "${PLATFORM}"
           docker run --rm --platform "${PLATFORM}" \
-            -v "$(pwd)/${PLATFORM}:/work" \
+            -v "$(pwd)/${PLATFORM}:/mnt" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
-            --privileged alpine /setup-arch.sh /work aarch64
+            --privileged alpine /setup-arch.sh
 
       - name: Prepare rootfs (armv7h)
         env:
@@ -51,9 +51,9 @@ jobs:
           set -euxo pipefail
           mkdir -p "${PLATFORM}"
           docker run --rm --platform "${PLATFORM}" \
-            -v "$(pwd)/${PLATFORM}:/work" \
+            -v "$(pwd)/${PLATFORM}:/mnt" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
-            --privileged alpine /setup-arch.sh /work armv7h
+            --privileged alpine /setup-arch.sh
 
       - name: Build and push multi-arch image
         env:
