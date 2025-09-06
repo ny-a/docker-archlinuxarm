@@ -82,4 +82,4 @@ jobs:
           fi
           sudo --preserve-env=DOCKER_CONFIG docker buildx build --platform linux/arm64,linux/arm/v7 . -t ${DATE_TAG} -t ${EXTRA_TAG} --push
 
-          sudo --preserve-env=DOCKER_CONFIG docker buildx imagetools inspect "$IMAGE:${DATE_TAG}"
+          sudo --preserve-env=DOCKER_CONFIG docker buildx imagetools inspect "${DATE_TAG}"
