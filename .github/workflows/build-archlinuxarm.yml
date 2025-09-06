@@ -1,0 +1,82 @@
+name: Build ArchLinuxARM Image
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    name: Build and Push GHCR Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (arm emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare rootfs (aarch64)
+        env:
+          DOCKER_BUILDKIT: "1"
+          PLATFORM: linux/arm64/v8
+          TARGET_ARCH: aarch64
+        run: |
+          set -euxo pipefail
+          mkdir -p "${TARGET_ARCH}"
+          docker run --rm --platform "${PLATFORM}" \
+            -v "$(pwd)/${TARGET_ARCH}:/work" \
+            -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
+            --privileged alpine /setup-arch.sh /work/mnt
+          cp ./Dockerfile "${TARGET_ARCH}/"
+
+      - name: Prepare rootfs (armv7h)
+        env:
+          DOCKER_BUILDKIT: "1"
+          PLATFORM: linux/arm/v7
+          TARGET_ARCH: armv7h
+        run: |
+          set -euxo pipefail
+          mkdir -p "${TARGET_ARCH}"
+          docker run --rm --platform "${PLATFORM}" \
+            -v "$(pwd)/${TARGET_ARCH}:/work" \
+            -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
+            --privileged alpine /setup-arch.sh /work/mnt "${TARGET_ARCH}"
+          cp ./Dockerfile "${TARGET_ARCH}/"
+
+      - name: Build and push multi-arch image
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/archlinuxarm
+        run: |
+          set -euxo pipefail
+          DATE_TAG="$(date -u +%Y%m%d)"
+          cat > docker-bake.hcl <<'HCL'
+          target "aarch64" {
+            context = "aarch64"
+            platforms = ["linux/arm64/v8"]
+          }
+
+          target "armv7h" {
+            context = "armv7h"
+            platforms = ["linux/arm/v7"]
+          }
+
+          target "image" {
+            inherits = ["aarch64", "armv7h"]
+          }
+          HCL
+          docker buildx bake image --push \
+            --set image.tags="$IMAGE:latest" \
+            --set image.tags+="$IMAGE:${DATE_TAG}"
