@@ -42,8 +42,7 @@ jobs:
           docker run --rm --platform "${PLATFORM}" \
             -v "$(pwd)/${TARGET_ARCH}:/work" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
-            --privileged alpine /setup-arch.sh /work/mnt
-          cp ./Dockerfile "${TARGET_ARCH}/"
+            --privileged alpine /setup-arch.sh /work aarch64
 
       - name: Prepare rootfs (armv7h)
         env:
@@ -56,8 +55,7 @@ jobs:
           docker run --rm --platform "${PLATFORM}" \
             -v "$(pwd)/${TARGET_ARCH}:/work" \
             -v "$(pwd)/setup-arch.sh:/setup-arch.sh" \
-            --privileged alpine /setup-arch.sh /work/mnt "${TARGET_ARCH}"
-          cp ./Dockerfile "${TARGET_ARCH}/"
+            --privileged alpine /setup-arch.sh /work armv7h
 
       - name: Build and push multi-arch image
         env:
@@ -71,19 +69,28 @@ jobs:
           DATE_TAG="$(date -u +%Y%m%d)"
           cat > docker-bake.hcl <<'HCL'
           target "aarch64" {
-            context = "aarch64"
+            context   = "."
             platforms = ["linux/arm64/v8"]
+            args      = { ROOTFS = "aarch64" }
           }
 
           target "armv7h" {
-            context = "armv7h"
+            context   = "."
             platforms = ["linux/arm/v7"]
+            args      = { ROOTFS = "armv7h" }
           }
 
-          target "image" {
-            inherits = ["aarch64", "armv7h"]
+          group "image" {
+            targets = ["aarch64", "armv7h"]
           }
           HCL
+          # Print the bake plan for visibility
+          sudo --preserve-env=DOCKER_CONFIG docker buildx bake image --print
+
+          # Build both targets and publish a multi-arch manifest under the same tags
           sudo --preserve-env=DOCKER_CONFIG docker buildx bake image --push \
-            --set image.tags="$IMAGE:latest" \
-            --set image.tags+="$IMAGE:${DATE_TAG}"
+            --set "*.tags=$IMAGE:latest" \
+            --set "*.tags=$IMAGE:${DATE_TAG}"
+
+          # Inspect the pushed image to verify both platforms are present
+          sudo --preserve-env=DOCKER_CONFIG docker buildx imagetools inspect "$IMAGE:${DATE_TAG}"

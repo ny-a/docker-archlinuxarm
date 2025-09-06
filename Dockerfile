@@ -1,4 +1,4 @@
 FROM scratch
-
-ADD ./mnt/ /
-CMD /usr/bin/bash
+ARG ROOTFS
+COPY ${ROOTFS}/ /
+CMD ["/usr/bin/bash"]
