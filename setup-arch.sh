@@ -10,6 +10,10 @@ ARCHITECTURE="${1:-\$arch}"
 apk update
 apk add --no-cache arch-install-scripts
 
+if [ "$(cat /etc/apk/arch)" = "armv7" ]; then
+  sed -i '/Architecture/s/auto/armv7h/' /etc/pacman.conf
+fi
+
 for repo in core extra alarm aur; do
   echo "[$repo]" | tee -a /etc/pacman.conf
   echo "Include = /etc/pacman.d/mirrorlist" | tee -a /etc/pacman.conf
