@@ -58,7 +58,7 @@ jobs:
 
       - name: Build and push multi-arch image
         env:
-          IMAGE: ghcr.io/${{ github.repository_owner }}/archlinuxarm
+          IMAGE: ghcr.io/${{ github.repository_owner }}/docker-archlinuxarm
         run: |
           set -euxo pipefail
           DATE_TAG="$(date -u +%Y%m%d)"
