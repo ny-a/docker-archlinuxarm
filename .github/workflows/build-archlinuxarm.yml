@@ -36,7 +36,7 @@ jobs:
 
       - name: Prepare rootfs (aarch64)
         env:
-          PLATFORM: linux/arm64/v8
+          PLATFORM: linux/arm64
         run: |
           set -euxo pipefail
           mkdir -p "${PLATFORM}"
@@ -62,8 +62,8 @@ jobs:
         run: |
           set -euxo pipefail
           sudo --preserve-env=DOCKER_CONFIG docker buildx create --name rootbuilder --use
-          DATE_TAG="$(date -u +%Y%m%d)"
-          sudo --preserve-env=DOCKER_CONFIG docker buildx build --platform linux/arm64/v8,linux/arm/v7 . -t $IMAGE:${DATE_TAG} -t $IMAGE:latest --push
+          DATE_TAG="$(date -u +%F)"
+          sudo --preserve-env=DOCKER_CONFIG docker buildx build --platform linux/arm64,linux/arm/v7 . -t $IMAGE:${DATE_TAG} -t $IMAGE:latest --push
 
           # Inspect the pushed image to verify both platforms are present
           sudo --preserve-env=DOCKER_CONFIG docker buildx imagetools inspect "$IMAGE:${DATE_TAG}"
