@@ -5,7 +5,7 @@ set -exuo pipefail
 GPG_KEY_ID="77193F152BDBE6A6"
 MOUNTPOINT="/mnt"
 ARCHITECTURE="${1:-\$arch}"
-shift
+[ $# -gt 0 ] && shift
 
 apk update
 apk add --no-cache arch-install-scripts
