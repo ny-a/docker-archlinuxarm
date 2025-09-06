@@ -1,4 +1,5 @@
 name: Build ArchLinuxARM Image
+run-name: Build ArchLinuxARM Image${{ github.event_name == 'workflow_dispatch' && (inputs.name != '' && format(' - {0}', inputs.name) || '') || '' }}
 
 on:
   push:
